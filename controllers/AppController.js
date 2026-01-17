@@ -1,21 +1,22 @@
-import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
+import dbClient from '../utils/db';
 
 class AppController {
-  // Méthode pour obtenir le statut de santé des services Redis et MongoDB
-  static async getStatus(req, res) {
-    const redisStatus = redisClient.isAlive();
-    const dbStatus = dbClient.isAlive();
-
-    res.status(200).json({ redis: redisStatus, db: dbStatus });
+  static getStatus(req, res) {
+    const status = {
+      redis: redisClient.isAlive(),
+      db: dbClient.isAlive(),
+    };
+    res.status(200).send(status);
   }
 
-  // Méthode pour obtenir des statistiques sur les utilisateurs et les fichiers
   static async getStats(req, res) {
-    const users = await dbClient.nbUsers();
-    const files = await dbClient.nbFiles();
-
-    res.status(200).json({ users, files });
+    const stats = {
+      users: await dbClient.nbUsers(),
+      files: await dbClient.nbFiles(),
+    };
+    res.status(200).send(stats);
   }
 }
+
 export default AppController;

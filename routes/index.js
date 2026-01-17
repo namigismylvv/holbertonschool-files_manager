@@ -1,34 +1,60 @@
 import express from 'express';
 import AppController from '../controllers/AppController';
-import UsersController from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
 import FilesController from '../controllers/FilesController';
+import UsersController from '../controllers/UsersController';
 
-const app = express.Router();
-app.use(express.json());
+function controllerRouting(app) {
+  const router = express.Router();
+  app.use('/', router);
 
-app.get('/status', AppController.getStatus);
+  router.get('/status', (req, res) => {
+    AppController.getStatus(req, res);
+  });
 
-app.get('/stats', AppController.getStats);
+  router.get('/stats', (req, res) => {
+    AppController.getStats(req, res);
+  });
 
-app.post('/users', UsersController.postNew);
+  router.post('/users', (req, res) => {
+    UsersController.postNew(req, res);
+  });
 
-app.get('/connect', AuthController.getConnect);
+  router.get('/connect', (req, res) => {
+    AuthController.getConnect(req, res);
+  });
 
-app.get('/disconnect', AuthController.getDisconnect);
+  router.get('/disconnect', (req, res) => {
+    AuthController.getDisconnect(req, res);
+  });
 
-app.get('/users/me', UsersController.getMe);
+  router.get('/users/me', (req, res) => {
+    UsersController.getMe(req, res);
+  });
 
-app.post('/files', FilesController.postUpload);
+  router.post('/files', (req, res) => {
+    FilesController.postUpload(req, res);
+  });
 
-app.put('/files/:id/publish', FilesController.putPublish);
+  router.get('/files/:id', (req, res) => {
+    FilesController.getShow(req, res);
+  });
 
-app.put('/files/:id/unpublish', FilesController.putUnpublish);
+  router.get('/files', (req, res) => {
+    FilesController.getIndex(req, res);
+  });
 
-app.get('/files/:id', FilesController.getShow);
+  router.put('/files/:id/publish', (req, res) => {
+    FilesController.putPublish(req, res);
+  });
 
-app.get('/files', FilesController.getIndex);
+  router.put('/files/:id/unpublish', (req, res) => {
+    FilesController.putUnpublish(req, res);
+  });
 
-app.get('/files/:id/data', FilesController.getFile);
+  router.get('/files/:id/data', (req, res) => {
+    FilesController.getFile(req, res);
+  });
+}
 
-export default app;
+export default controllerRouting;
