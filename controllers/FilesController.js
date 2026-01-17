@@ -335,7 +335,10 @@ class FilesController {
         }
 
         const type = mime.contentType(search1[0].name);
-        const charset = type.split('=')[1];
+        let charset = 'utf-8';
+        if (type && type.includes('=')) {
+          charset = type.split('=')[1];
+        }
         try {
           const data = fs.readFileSync(search1[0].localPath, charset);
           return res.send(data);
@@ -357,7 +360,10 @@ class FilesController {
       return res.status(404).json({ error: 'Not found' });
     }
     const type = mime.contentType(search2[0].name);
-    const charset = type.split('=')[1];
+    let charset = 'utf-8';
+    if (type && type.includes('=')) {
+      charset = type.split('=')[1];
+    }
     try {
       const data = fs.readFileSync(search2[0].localPath, charset);
       return res.send(data);
