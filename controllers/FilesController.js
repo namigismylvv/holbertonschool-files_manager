@@ -313,10 +313,10 @@ class FilesController {
     }
     if (search[0].isPublic === false) {
       const key = req.header('X-Token');
-      const session = await redisClient.get(`auth_${key}`);
       if (!key || key.length === 0) {
         return res.status(404).json({ error: 'Not found' });
       }
+      const session = await redisClient.get(`auth_${key}`);
       if (session) {
         let search1 = [];
         try {
