@@ -1,30 +1,32 @@
-import Bull from 'bull';
-import mongodb from 'mongodb';
-import imageThumbnail from 'image-thumbnail';
-import fs from 'fs';
-import dbClient from './utils/db';
+import { writeFileSync } from 'fs';
+import DBClient from './utils/db';
 
-const { ObjectId } = mongodb;
+const Queue = require('bull');
+const imageThumbnail = require('image-thumbnail');
 
-const fileQueue = new Bull('fileQueue');
+const fileQueue = new Queue('fileQueue');
+const thumbnailSizes = [500, 250, 100];
 
-fileQueue.process(async (job) => {
-  const { fileId, userId } = job.data || {};
+fileQueue.process(async (job, done) => {
+  if (!job.data.fileId) {
+    done(Error('Missing fileId'));
+  }
 
-  if (!fileId) throw new Error('Missing fileId');
-  if (!userId) throw new Error('Missing userId');
+  if (!job.data.userId) {
+    done(Error('Missing userId'));
+  }
 
-  const file = await dbClient.db.collection('files').findOne({
-    _id: ObjectId(fileId),
-    userId: ObjectId(userId),
-  });
+  const fileInfo = await DBClient.findFileById(job.data.fileId, job.data.userId);
+  if (!fileInfo) {
+    done(Error('File not found'));
+  }
 
-  if (!file) throw new Error('File not found');
+  const promises = thumbnailSizes.map((width) => imageThumbnail(fileInfo.localPath, { width })
+    .then((buffer) => {
+      writeFileSync(`${fileInfo.localPath}_${width}`, buffer);
+    }));
 
-  const sizes = [500, 250, 100];
+  await Promise.all(promises);
 
-  await Promise.all(sizes.map(async (size) => {
-    const thumbnail = await imageThumbnail(file.localPath, { width: size });
-    await fs.promises.writeFile(`${file.localPath}_${size}`, thumbnail);
-  }));
+  done();
 });

@@ -1,54 +1,56 @@
-import crypto from 'crypto';
-import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
 class UsersController {
+  // Méthode pour gérer la création de nouveaux utilisateurs
   static async postNew(req, res) {
-    const { email, password } = req.body || {};
+    const { email, password } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: 'Missing email' });
+      res.status(400);
+      return res.json({ error: 'Missing email' });
     }
+
     if (!password) {
-      return res.status(400).json({ error: 'Missing password' });
+      res.status(400);
+      return res.json({ error: 'Missing password' });
     }
 
-    const usersCollection = dbClient.db.collection('users');
-    const existingUser = await usersCollection.findOne({ email });
-
-    if (existingUser) {
-      return res.status(400).json({ error: 'Already exist' });
+    // Vérification si un utilisateur avec cet email existe déjà dans la base de données
+    const exist = await dbClient.doesUserExist(email);
+    if (exist) {
+      res.status(400);
+      return res.json({ error: 'Already exist' });
     }
 
-    const hashedPassword = crypto.createHash('sha1').update(password).digest('hex');
-    const result = await usersCollection.insertOne({ email, password: hashedPassword });
+    // Création d'un nouvel utilisateur dans la base de données
+    const id = await dbClient.createUser(email, password);
 
-    return res.status(201).json({ id: result.insertedId.toString(), email });
+    res.status(201);
+    return res.json({ id, email });
   }
 
+  // Méthode pour récupérer les informations de l'utilisateur authentifié
   static async getMe(req, res) {
-    const token = req.header('X-Token');
-
+    const token = req.headers['x-token'];
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const tokenKey = `auth_${token}`;
+    const userId = await redisClient.get(tokenKey);
 
-    const key = `auth_${token}`;
-    const userId = await redisClient.get(key);
-
+    // Vérification si le token est valide et correspond à un utilisateur existant
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(userId) });
-
+    // Recherche de l'utilisateur dans la base de données par son identifiant
+    const user = await dbClient.findUserById(userId);
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    return res.status(200).json({ id: user._id.toString(), email: user.email });
+    // Réponse avec les informations de l'utilisateur
+    return res.status(200).json({ id: user._id, email: user.email });
   }
 }
-
 export default UsersController;
